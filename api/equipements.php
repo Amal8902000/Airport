@@ -40,6 +40,18 @@ if ($action === 'detail') {
     $equipement ? ok(['equipement' => $equipement]) : fail('Equipement introuvable', 404);
 }
 
+if ($action === 'scan') {
+    $code = trim((string) ($_GET['code'] ?? ''));
+    if ($code === '') {
+        fail('Code scanne manquant', 422);
+    }
+
+    $stmt = $conn->prepare('SELECT * FROM equipements WHERE code = ? OR numero_serie = ? OR id = ? LIMIT 1');
+    $stmt->execute([$code, $code, ctype_digit($code) ? (int) $code : 0]);
+    $equipement = $stmt->fetch();
+    $equipement ? ok(['equipement' => $equipement]) : fail('Aucun equipement trouve pour ce code', 404);
+}
+
 if ($action === 'ajouter' || $action === 'modifier') {
     require_roles(['admin', 'responsable']);
 

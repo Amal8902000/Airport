@@ -9,7 +9,13 @@
 <body>
 <?php render_navbar('equipements'); ?>
 <main class="page">
-  <div class="page-header"><span>Gestion des equipements</span><?php if (has_role(['admin', 'responsable'])): ?><button class="btn-primary" onclick="ouvrirModalAjout()">+ Ajouter</button><?php endif; ?></div>
+  <div class="page-header">
+    <span>Gestion des equipements</span>
+    <div class="page-actions">
+      <button class="btn-secondary" onclick="ouvrirModalScan()">Scanner</button>
+      <?php if (has_role(['admin', 'responsable'])): ?><button class="btn-primary" onclick="ouvrirModalAjout()">+ Ajouter</button><?php endif; ?>
+    </div>
+  </div>
   <section class="filtres-box">
     <div class="filtre-row">
       <span class="filtre-label">Equipement</span><input id="f-nom" type="text">
@@ -49,6 +55,19 @@
 </form></div></div>
 
 <div class="modal-overlay" id="detailModal"><div class="modal"><div class="modal-header"><span>Fiche detail equipement</span><button class="modal-close" onclick="hideModal('detailModal')">×</button></div><div class="modal-body" id="detailBody"></div></div></div>
+
+<div class="modal-overlay" id="scanModal"><div class="modal"><div class="modal-header"><span>Scanner un equipement</span><button class="modal-close" onclick="fermerModalScan()">×</button></div><div class="modal-body">
+  <div class="scan-box">
+    <video id="scanVideo" class="scan-video" muted playsinline></video>
+    <div id="scanMessage" class="scan-message">Placez le code-barres ou QR code de l'equipement devant la camera.</div>
+  </div>
+  <form id="scanForm" class="scan-form">
+    <label class="form-label" for="scanCode">Code / numero serie</label>
+    <input class="form-input" id="scanCode" name="scanCode" autocomplete="off" placeholder="Ex: RX-CAB-01">
+    <button class="btn-chercher" type="submit">Chercher</button>
+  </form>
+  <div id="scanResult" class="scan-result"></div>
+</div></div></div>
 
 <div class="modal-overlay" id="planningModal"><div class="modal modal-lg"><div class="modal-header"><span id="planningTitle">Ajouter un planning</span><button class="modal-close" onclick="hideModal('planningModal')">×</button></div><form class="modal-body" id="planningForm">
   <div class="planning-grid">
