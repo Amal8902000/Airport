@@ -18,20 +18,14 @@ if (isset($_SESSION['user'])) {
     <img class="login-logo" src="../assets/img/logo-onda.png" alt="ONDA" onerror="this.style.display='none';document.querySelector('.logo-fallback').style.display='grid'">
     <div class="logo-fallback" style="display:none">ONDA</div>
     <h1>GMAO - Gestion de Maintenance</h1>
-    <input type="email" name="email" placeholder="Email" required value="admin@gmao-onda.local">
-    <input type="password" name="password" placeholder="Mot de passe" required value="Admin123!">
+    
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Mot de passe" required>
+    
     <div class="login-error" id="loginError"></div>
     <button class="btn-primary" type="submit" style="width:100%;justify-content:center">Se connecter</button>
-    <div style="text-align:left;font-size:12px;line-height:1.6;margin-top:14px;color:#555">
-      <strong>Comptes demo</strong><br>
-      admin@gmao-onda.local / Admin123!<br>
-      tarik@gmao-onda.local / Tech123!<br>
-      responsable@gmao-onda.local / Resp123!<br>
-      superviseur@gmao-onda.local / Sup123!<br>
-      agent@gmao-onda.local / Agent123!<br>
-      <a href="../config/reset_users.php">Reinitialiser les comptes</a>
-    </div>
   </form>
+
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (event) => {
       event.preventDefault();

@@ -2,6 +2,8 @@ let equipementsCache = [];
 let listes = { familles: [], zones: [], services: [] };
 let editionId = null;
 let planningEquipement = null;
+let planningEquipementNom = '';
+let planningEquipementService = 'ESU';
 let selectedPlanningDate = null;
 let calendarDate = new Date();
 let scanStream = null;
@@ -58,7 +60,7 @@ function renderTableau(items) {
       <td>${formatDate(e.date_remplacement_prevu)}</td>
       <td><span class="badge badge-esu">${escapeHtml(e.service)}</span><br>${escapeHtml(e.famille)}</td>
       <td>${escapeHtml(e.remarques)}</td>
-      <td><button class="btn-icon" onclick="ouvrirModalPlanning(${e.id}, '${escapeHtml(e.nom).replace(/'/g, '&#039;')}')">📅</button></td>
+      <td><button class="btn-icon" data-id="${Number(e.id)}" data-nom="${escapeHtml(e.nom)}" onclick="ouvrirModalPlanning(this)">📅</button></td>
     </tr>
   `).join('');
   document.querySelectorAll('#equipementsBody tr').forEach((row) => {
@@ -241,10 +243,17 @@ function setScanMessage(message) {
   if (target) target.textContent = message;
 }
 
-function ouvrirModalPlanning(id, nom) {
+function ouvrirModalPlanning(button) {
+  const id = Number(button.dataset.id);
+  const nom = button.dataset.nom || '';
+  const equipement = equipementsCache.find((item) => Number(item.id) === id);
   planningEquipement = id;
+  planningEquipementNom = nom;
+  planningEquipementService = equipement?.service || sessionStorage.getItem('service') || 'ESU';
   selectedPlanningDate = null;
   document.getElementById('planningTitle').textContent = `Ajouter un planning pour : ${nom}`;
+  document.getElementById('planningForm').reset();
+  document.getElementById('planningDate').value = '';
   calendarDate = new Date();
   generateCalendar(calendarDate.getMonth(), calendarDate.getFullYear());
   showModal('planningModal');
@@ -278,11 +287,52 @@ function selectCalendarDate(date) {
 async function soumettrePlanning(event) {
   event.preventDefault();
   const form = new FormData(event.target);
-  const payload = Object.fromEntries(form.entries());
-  payload.equipement_id = planningEquipement;
-  payload.date_prevue = selectedPlanningDate || payload.date_prevue;
-  payload.nuit = document.querySelector('[name="nuit"]').checked ? 1 : 0;
-  await fetchJSON(`${API_BASE}preventive.php?action=ajouter`, { method: 'POST', body: JSON.stringify(payload) });
-  hideModal('planningModal');
-  showToast('Planning preventif ajoute');
+  const typeMaintenance = form.get('type_maintenance');
+  const periodicite = form.get('periodicite');
+  const dateDebut = selectedPlanningDate || form.get('date_prevue');
+  const uneSeuleJournee = document.querySelector('[name="une_seule_journee"]').checked;
+
+  if (!typeMaintenance) {
+    showToast('Type de maintenance obligatoire', 'error');
+    return;
+  }
+  if (!dateDebut) {
+    showToast('Date de debut obligatoire', 'error');
+    return;
+  }
+  if (!periodicite && !uneSeuleJournee) {
+    showToast('Choisissez une periodicite ou une seule journee', 'error');
+    return;
+  }
+
+  const payload = {
+    action: 'ajouter',
+    equipement_id: planningEquipement,
+    equipement_nom: planningEquipementNom,
+    type_maintenance: typeMaintenance,
+    periodicite,
+    date_debut: dateDebut,
+    nuit: document.querySelector('[name="nuit"]').checked,
+    eviter_weekend: document.querySelector('[name="eviter_weekend"]').checked,
+    meme_jour_semaine: document.querySelector('[name="meme_jour_semaine"]').checked,
+    une_seule_journee: uneSeuleJournee,
+    service: planningEquipementService,
+  };
+
+  try {
+    const data = await fetchJSON(`${API_BASE}preventive.php`, { method: 'POST', body: JSON.stringify(payload) });
+    hideModal('planningModal');
+    const dates = data.dates || [];
+    const debut = dates[0] ? formatDateFr(dates[0]) : formatDateFr(dateDebut);
+    const fin = dates.length ? formatDateFr(dates[dates.length - 1]) : debut;
+    showToast(`Planning cree : ${data.nb_dates_generees || dates.length} dates generees du ${debut} au ${fin}`);
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+function formatDateFr(value) {
+  if (!value) return '';
+  const [year, month, day] = String(value).slice(0, 10).split('-');
+  return `${day}/${month}/${year}`;
 }
